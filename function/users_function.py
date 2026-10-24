@@ -11,8 +11,11 @@ def response_user(user):
 def response_users(users: list):
     return [response_user(user) for user in users]
 
-def open_file(filename: str) ->str:
-    with open(f"/Users/dimarik/PycharmProjects/TaskManagerApi/TaskManage/{filename}", encoding="utf-8") as f:
-        content = f.read()
-        return content
+from pathlib import Path
 
+
+def open_file(filename):
+    file_path = Path(__file__).resolve().parent.parent / filename
+
+    with open(file_path, encoding="utf-8") as f:
+        return f.read().strip()
