@@ -17,11 +17,21 @@ def verify_password(password: str, hashed_password: str) -> bool:
     return pwd_hash.verify(password, hashed_password)
 
 
+import os
+
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 if not SECRET_KEY:
-    SECRET_KEY = open_file("secret.txt")
-    
+    try:
+        SECRET_KEY = open_file("secret.txt")
+    except FileNotFoundError:
+        if os.getenv("GITHUB_ACTIONS") == "true":
+            SECRET_KEY = "test-only-secret-key-for-ci"
+        else:
+            raise RuntimeError(
+                "SECRET_KEY is not configured and secret.txt was not found"
+            )
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
