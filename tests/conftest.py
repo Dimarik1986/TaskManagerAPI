@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 
@@ -15,7 +16,10 @@ from sqlalchemy.orm import sessionmaker
 
 from connection.postgres_depency import get_db
 
-TEST_DATABASE_URL = "postgresql+psycopg://localhost/taskmanager_test"
+TEST_DATABASE_URL = os.getenv(
+    "TEST_DATABASE_URL",
+    "postgresql+psycopg://localhost/taskmanager_test"
+)
 
 if not TEST_DATABASE_URL.endswith("/taskmanager_test"):
     raise RuntimeError("Unsafe test database URL")
