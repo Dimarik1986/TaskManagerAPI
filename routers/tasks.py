@@ -1,12 +1,16 @@
 from fastapi import APIRouter, HTTPException, Depends, Request, Response, status
+
+from connection.postgres_depency import get_db
+from sqlalchemy.orm import Session
+from database.tasks_db_sqlalchemy import TasksDB
 from managers.taskManage import TaskManage
 from models.tasks import TaskResponse, TaskCreate, TaskPatch
 from routers.users import get_current_user_id
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
-def get_manager(request: Request):
-    return TaskManage(request.app.state.tasks_db)
+def get_manager(db:Session=Depends(get_db)):
+    return TaskManage(TasksDB(db))
 
 
 @router.get("", response_model=list[TaskResponse])
@@ -42,7 +46,7 @@ async def add_task(
         user_id,
         data.done,
     )
-    return TaskResponse(**task)
+    return task
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -1,30 +1,35 @@
-import sqlite3
+from sqlalchemy.exc import IntegrityError
 import jwt
-from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm.session import Session
+
+from connection.postgres_depency import get_db
+from database.users_db_sqlalchemy import UsersDB
 from function.security import decode_access_token
 
 from fastapi import APIRouter, HTTPException, Depends, Request, Response, status
 
 from function.security import verify_password, create_access_token
 from managers.usersManage import UsersManager
+from models.db_models_users import User
 
 from models.users import ResponseUser, CreateUser, LoginUser
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-def get_manager(request: Request):
-    return UsersManager(request.app.state.users_db)
+def get_manager(db:Session=Depends(get_db)):
+    return UsersManager(UsersDB(db))
 
 @router.post("/", response_model=ResponseUser)
 async def add_user(users: CreateUser, manager: UsersManager = Depends(get_manager)):
     try:
         request_user = manager.add_user(users)
-    except sqlite3.IntegrityError:
+    except IntegrityError as e:
+        print("\nREAL DATABASE ERROR:", repr(e.orig))
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Email already exists"
+            detail=str(e.orig)
         )
     return request_user
 
@@ -88,6 +93,7 @@ async def delete_user(user_id: int, manager: UsersManager = Depends(get_manager)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 @router.put("/{user_id}", response_model=ResponseUser)
 async def update_user(user_id: int,users: CreateUser, manager: UsersManager = Depends(get_manager)):
     user = manager.update_user(users, user_id)
@@ -108,14 +114,14 @@ async def login(users: LoginUser,
             detail="Invalid email or password"
         )
 
-    if not verify_password(users.password, user[3]):
+    if not verify_password(users.password, user.password_hash):
         raise HTTPException(
             status_code=401,
             detail="Invalid email or password"
         )
 
     return  {
-        "access_token": create_access_token(user[0]),
+        "access_token": create_access_token(user.id),
         "token_type": "bearer"
             }
 

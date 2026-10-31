@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, ConfigDict, model_validator, StrictBool, StrictStr
 
 class TaskResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     title: str
     done: bool
